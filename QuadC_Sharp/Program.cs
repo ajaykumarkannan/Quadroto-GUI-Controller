@@ -40,10 +40,11 @@ namespace QuadC_Sharp
             mForm1 = new Form1();
             initialize.Start();
             Application.Run(mForm1);
+            state = 3;
             _continue = false;
             initialize.Join();
-            readThread.Join();
-            writeThread.Join();
+            if (readThread != null && readThread.IsAlive) readThread.Join();
+            if (writeThread != null && writeThread.IsAlive) writeThread.Join();
         }
         public static void initPort()
         {
@@ -82,6 +83,14 @@ namespace QuadC_Sharp
                     sp.Close();
                     Console.WriteLine("COM Port closed.");
                     state = 0;
+                }
+                else if (state == 0)
+                {
+                    // Just wait
+                }
+                else
+                {
+                    break;
                 }
                 // Do nothing
             }
