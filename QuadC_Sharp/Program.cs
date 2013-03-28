@@ -7,6 +7,8 @@ using System.IO.Ports;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Diagnostics;
+using System.IO;
 
 namespace QuadC_Sharp
 {
@@ -21,13 +23,31 @@ namespace QuadC_Sharp
         static SerialPort sp;
         static Form1 mForm1;
         public static Thread initialize, readThread, writeThread;
+        public static TextWriterTraceListener twtl;
+        public static ConsoleTraceListener ctl;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
-            AllocConsole();
+
+            Trace.Listeners.Clear();
+
+
+            twtl = new TextWriterTraceListener("C:\\BTP\\Text_" + DateTime.Now.Month + "." + DateTime.Now.Day + "_" + DateTime.Now.Hour + "." + DateTime.Now.Minute + ".txt");
+            //Path.Combine(Path.GetTempPath(), AppDomain.CurrentDomain.FriendlyName));
+            twtl.Name = "TextLogger";
+            twtl.TraceOutputOptions = TraceOptions.ThreadId | TraceOptions.DateTime;
+
+            ctl = new ConsoleTraceListener(false);
+            ctl.TraceOutputOptions = TraceOptions.DateTime;
+
+            Trace.Listeners.Add(twtl);
+            Trace.Listeners.Add(ctl);
+            Trace.AutoFlush = true;
+
+            // AllocConsole();
             sp = new SerialPort();
             initialize = new Thread(initPort);
             bytes = new Byte[20];
@@ -42,13 +62,17 @@ namespace QuadC_Sharp
             Application.Run(mForm1);
             state = 3;
             _continue = false;
+            state = 3;
             initialize.Join();
+<<<<<<< HEAD
             if (readThread != null && readThread.IsAlive) readThread.Join();
             if (writeThread != null && writeThread.IsAlive) writeThread.Join();
+=======
+>>>>>>> Working
         }
         public static void initPort()
         {
-            while (true)
+            while (state != 3)
             {
                 if (_continue && state == 1)
                 {
@@ -59,7 +83,7 @@ namespace QuadC_Sharp
                     sp.ReadTimeout = 500;
                     sp.WriteTimeout = 500;
                     sp.PortName = mForm1.mQuad.comPort;
-                    Console.WriteLine(sp.PortName);
+                    Trace.WriteLine(sp.PortName);
                     // TODO: Exception if COM port access is denied
                     try
                     {
@@ -67,7 +91,7 @@ namespace QuadC_Sharp
                     }
                     catch (Exception)
                     {
-                        Console.WriteLine("Could not open COM Port.");
+                        Trace.WriteLine("Could not open COM Port.");
                         _continue = false;
                     }
                     readThread = new Thread(Read);
@@ -78,12 +102,13 @@ namespace QuadC_Sharp
                 }
                 else if (!_continue && state == 2)
                 {
-                    while (readThread.IsAlive) ;
-                    while (writeThread.IsAlive) ;
+                    readThread.Join();
+                    writeThread.Join();
                     sp.Close();
-                    Console.WriteLine("COM Port closed.");
+                    Trace.WriteLine("COM Port closed.");
                     state = 0;
                 }
+<<<<<<< HEAD
                 else if (state == 0)
                 {
                     // Just wait
@@ -92,6 +117,10 @@ namespace QuadC_Sharp
                 {
                     break;
                 }
+=======
+                else if (state == -3) break;
+
+>>>>>>> Working
                 // Do nothing
             }
         }
@@ -107,7 +136,7 @@ namespace QuadC_Sharp
                     for (int i = 0; i < bytesRead; i++)
                     {
                         if (j >= 20) j = 0;
-                        // Console.WriteLine(bytes[i]);
+                        // Trace.WriteLine(bytes[i]);
                         switch (bytes[i])
                         {
                             case 255:
@@ -126,7 +155,7 @@ namespace QuadC_Sharp
                 catch (TimeoutException) { }
                 catch (Exception)
                 {
-                    Console.WriteLine("Some error in COM Port, most probably ejected.");
+                    Trace.WriteLine("Some error in COM Port, most probably ejected.");
                     state = 2;
                     _continue = false;
                 }
@@ -140,12 +169,15 @@ namespace QuadC_Sharp
                 try
                 {
                     wBytes = makePacket(mForm1.mQuad.packetType);
-                    for (int i = 0; i < wBytes.Length; i++)
+                    if (mForm1.mQuad.packetType != 0)
                     {
-                        Console.Write(wBytes[i]);
-                        Console.Write(" ");
+                        for (int i = 0; i < wBytes.Length; i++)
+                        {
+                            Trace.Write(wBytes[i]);
+                            Trace.Write(" ");
+                        }
+                        Trace.WriteLine(" ");
                     }
-                    Console.WriteLine();
                     sp.Write(wBytes, 0, wBytes.Length);
                     mForm1.mQuad.packetType = 0;
                     System.Threading.Thread.Sleep(300);
@@ -153,7 +185,7 @@ namespace QuadC_Sharp
                 catch (TimeoutException) { }
                 catch (Exception)
                 {
-                    Console.WriteLine("Some error in COM Port, most probably ejected.");
+                    Trace.WriteLine("Some error in COM Port, most probably ejected.");
                     state = 2;
                     _continue = false;
                 }
@@ -169,7 +201,6 @@ namespace QuadC_Sharp
         public static Byte[] makePacket(int option)
         {
             Byte[] output;
-            Byte[] temp;
             int start;
             switch (option)
             {
@@ -205,47 +236,47 @@ namespace QuadC_Sharp
                     output = new Byte[4 * 9 + 5];
                     output[1] = 0x03;
                     // Pitch PID
-                    Console.Write(mForm1.mQuad.pitchKp);
+                    Trace.Write(mForm1.mQuad.pitchKp);
                     temp = GetBytes(mForm1.mQuad.pitchKp);
                     start = 3;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.Write(mForm1.mQuad.pitchKi);
+                    Trace.Write(" ");
+                    Trace.Write(mForm1.mQuad.pitchKi);
                     temp = GetBytes(mForm1.mQuad.pitchKi);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.WriteLine(mForm1.mQuad.pitchKd);
+                    Trace.Write(" ");
+                    Trace.WriteLine(mForm1.mQuad.pitchKd);
                     temp = GetBytes(mForm1.mQuad.pitchKd);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
                     // Roll PID
-                    Console.Write(mForm1.mQuad.rollKp);
+                    Trace.Write(mForm1.mQuad.rollKp);
                     temp = GetBytes(mForm1.mQuad.rollKp);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.Write(mForm1.mQuad.rollKi);
+                    Trace.Write(" ");
+                    Trace.Write(mForm1.mQuad.rollKi);
                     temp = GetBytes(mForm1.mQuad.rollKi);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.WriteLine(mForm1.mQuad.rollKd);
+                    Trace.Write(" ");
+                    Trace.WriteLine(mForm1.mQuad.rollKd);
                     temp = GetBytes(mForm1.mQuad.rollKd);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
                     // Yaw PID
-                    Console.Write(mForm1.mQuad.yawKp);
+                    Trace.Write(mForm1.mQuad.yawKp);
                     temp = GetBytes(mForm1.mQuad.yawKp);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.Write(mForm1.mQuad.yawKi);
+                    Trace.Write(" ");
+                    Trace.Write(mForm1.mQuad.yawKi);
                     temp = GetBytes(mForm1.mQuad.yawKi);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.WriteLine(mForm1.mQuad.yawKd);
+                    Trace.Write(" ");
+                    Trace.WriteLine(mForm1.mQuad.yawKd);
                     temp = GetBytes(mForm1.mQuad.yawKd);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
@@ -259,21 +290,21 @@ namespace QuadC_Sharp
                     output[start++] = (Byte)((int)(mForm1.mQuad.pitch_d) & 0xFF);
                     output[start++] = (Byte)((int)(mForm1.mQuad.roll_d) & 0xFF);
                     output[start++] = (Byte)((int)(mForm1.mQuad.yaw_d) & 0xFF);
-                    output[start++] = (Byte)((int)(mForm1.mQuad.alt_d) & 0xFF);
+                    output[start++] = (Byte)((int)(mForm1.mQuad.alt_d) & 0xFF); 
                     /*** Using floats
                     output = new Byte[3 * 4 + 5];
                     output[1] = 0x04;
-                    Console.Write(mForm1.mQuad.pitch_d);
+                    Trace.Write(mForm1.mQuad.pitch_d);
                     temp = GetBytes(mForm1.mQuad.pitch_d);
                     start = 3;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.Write(mForm1.mQuad.roll_d);
+                    Trace.Write(" ");
+                    Trace.Write(mForm1.mQuad.roll_d);
                     temp = GetBytes(mForm1.mQuad.roll_d);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
-                    Console.Write(" ");
-                    Console.WriteLine(mForm1.mQuad.yaw_d);
+                    Trace.Write(" ");
+                    Trace.WriteLine(mForm1.mQuad.yaw_d);
                     temp = GetBytes(mForm1.mQuad.yaw_d);
                     start += 4;
                     for (int i = start; i < start + 4; i++) output[i] = temp[i - start];
@@ -354,7 +385,7 @@ namespace QuadC_Sharp
                     // printf("%d\t", (int) ((char) packet[k]));
                     if (packet[k] < 253)
                     {
-                        Console.Write(2 * temp);
+                        Trace.Write(2 * temp);
 
                         // printf("%4d\t", 2 * temp);
                         // printf("%d\t", (int) (2 * (char) packet[k]));
@@ -363,11 +394,11 @@ namespace QuadC_Sharp
                     {
                         if (k1 == 2 || k1 == 4 || k1 == 5)
                         {
-                            Console.Write(2 * (packet[k] + packet[k + 1]));
+                            Trace.Write(2 * (packet[k] + packet[k + 1]));
                         }
                         else
                         {
-                            Console.Write((SByte)(packet[k] + packet[k + 1]));
+                            Trace.Write((SByte)(packet[k] + packet[k + 1]));
                         }
                         // printf("%4d\t", 2 * (int)((char)(packet[k] + packet[k + 1])));
                         //printf("%d\t", (2 * ((int) packet[k] + (int) packet[k+1])));
@@ -388,10 +419,10 @@ namespace QuadC_Sharp
                             break;
                     }
                     k1++;
-                    Console.Write("\t");
+                    Trace.Write("\t");
                 }
                 if (!mForm1.mQuad.changed) mForm1.mQuad.changed = true;
-                Console.WriteLine();
+                Trace.WriteLine(" ");
             }
         }
     }
