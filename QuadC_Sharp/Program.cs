@@ -58,17 +58,13 @@ namespace QuadC_Sharp
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             mForm1 = new Form1();
+            initialize.Name = "Initialize";
             initialize.Start();
             Application.Run(mForm1);
             state = 3;
             _continue = false;
             state = 3;
             initialize.Join();
-<<<<<<< HEAD
-            if (readThread != null && readThread.IsAlive) readThread.Join();
-            if (writeThread != null && writeThread.IsAlive) writeThread.Join();
-=======
->>>>>>> Working
         }
         public static void initPort()
         {
@@ -83,7 +79,7 @@ namespace QuadC_Sharp
                     sp.ReadTimeout = 500;
                     sp.WriteTimeout = 500;
                     sp.PortName = mForm1.mQuad.comPort;
-                    Trace.WriteLine(sp.PortName);
+                    Console.WriteLine(sp.PortName);
                     // TODO: Exception if COM port access is denied
                     try
                     {
@@ -91,11 +87,13 @@ namespace QuadC_Sharp
                     }
                     catch (Exception)
                     {
-                        Trace.WriteLine("Could not open COM Port.");
+                        Console.WriteLine("Could not open COM Port.");
                         _continue = false;
                     }
                     readThread = new Thread(Read);
+                    readThread.Name = "ReadThread";
                     writeThread = new Thread(Write);
+                    writeThread.Name = "WriteThread";
                     readThread.Start();
                     writeThread.Start();
                     state = 0;
@@ -105,22 +103,10 @@ namespace QuadC_Sharp
                     readThread.Join();
                     writeThread.Join();
                     sp.Close();
-                    Trace.WriteLine("COM Port closed.");
+                    Console.WriteLine("COM Port closed.");
                     state = 0;
                 }
-<<<<<<< HEAD
-                else if (state == 0)
-                {
-                    // Just wait
-                }
-                else
-                {
-                    break;
-                }
-=======
                 else if (state == -3) break;
-
->>>>>>> Working
                 // Do nothing
             }
         }
@@ -143,7 +129,12 @@ namespace QuadC_Sharp
                                 j = 0;
                                 break;
                             case 254:
-                                if (j > 0) printData(j);
+                                if (j > 0)
+                                {
+                                    Thread.BeginCriticalRegion();
+                                    printData(j);
+                                    Thread.EndCriticalRegion();
+                                }
                                 j = -1;
                                 break;
                             default:
@@ -171,12 +162,14 @@ namespace QuadC_Sharp
                     wBytes = makePacket(mForm1.mQuad.packetType);
                     if (mForm1.mQuad.packetType != 0)
                     {
+                        Thread.BeginCriticalRegion();
                         for (int i = 0; i < wBytes.Length; i++)
                         {
                             Trace.Write(wBytes[i]);
                             Trace.Write(" ");
                         }
                         Trace.WriteLine(" ");
+                        Thread.EndCriticalRegion();
                     }
                     sp.Write(wBytes, 0, wBytes.Length);
                     mForm1.mQuad.packetType = 0;
@@ -185,7 +178,7 @@ namespace QuadC_Sharp
                 catch (TimeoutException) { }
                 catch (Exception)
                 {
-                    Trace.WriteLine("Some error in COM Port, most probably ejected.");
+                    Console.WriteLine("Some error in COM Port, most probably ejected.");
                     state = 2;
                     _continue = false;
                 }
@@ -382,13 +375,9 @@ namespace QuadC_Sharp
                     temp = (SByte)(packet[k]);
                     if (k1 == 2 || k1 == 4 || k1 == 5) temp = packet[k];
                     else temp = (SByte)(packet[k]);
-                    // printf("%d\t", (int) ((char) packet[k]));
                     if (packet[k] < 253)
                     {
                         Trace.Write(2 * temp);
-
-                        // printf("%4d\t", 2 * temp);
-                        // printf("%d\t", (int) (2 * (char) packet[k]));
                     }
                     else
                     {
@@ -400,8 +389,6 @@ namespace QuadC_Sharp
                         {
                             Trace.Write((SByte)(packet[k] + packet[k + 1]));
                         }
-                        // printf("%4d\t", 2 * (int)((char)(packet[k] + packet[k + 1])));
-                        //printf("%d\t", (2 * ((int) packet[k] + (int) packet[k+1])));
                         k++;
                     }
                     switch (k1)
