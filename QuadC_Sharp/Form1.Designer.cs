@@ -1,4 +1,22 @@
-﻿namespace QuadC_Sharp
+﻿/***************************************************************************
+This file is part of Quad Controller.
+Quad Controller is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Quad Controller is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Quad Controller.  If not, see <http://www.gnu.org/licenses/>.
+***************************************************************************/
+
+// This is a machine generated code for the GUI and should not be modified unless absolutely neccessary
+// as apparently, the user made changes may get erased. 
+namespace QuadC_Sharp
 {
     partial class Form1
     {
@@ -78,6 +96,10 @@
             this.anglesSet = new System.Windows.Forms.Button();
             this.label24 = new System.Windows.Forms.Label();
             this.stopBtn = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.deltaValBox = new System.Windows.Forms.TextBox();
+            this.label25 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.throttleSet)).BeginInit();
             this.SuspendLayout();
             // 
@@ -484,7 +506,7 @@
             // 
             // anglesSet
             // 
-            this.anglesSet.Location = new System.Drawing.Point(393, 75);
+            this.anglesSet.Location = new System.Drawing.Point(393, 19);
             this.anglesSet.Name = "anglesSet";
             this.anglesSet.Size = new System.Drawing.Size(75, 23);
             this.anglesSet.TabIndex = 21;
@@ -503,7 +525,7 @@
             // 
             // stopBtn
             // 
-            this.stopBtn.Location = new System.Drawing.Point(393, 141);
+            this.stopBtn.Location = new System.Drawing.Point(393, 179);
             this.stopBtn.Name = "stopBtn";
             this.stopBtn.Size = new System.Drawing.Size(75, 23);
             this.stopBtn.TabIndex = 23;
@@ -511,11 +533,53 @@
             this.stopBtn.UseVisualStyleBackColor = true;
             this.stopBtn.Click += new System.EventHandler(this.stopBtn_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(393, 104);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 24;
+            this.button1.Text = "+Delta";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click_2);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(393, 133);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.TabIndex = 25;
+            this.button2.Text = "-Delta";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // deltaValBox
+            // 
+            this.deltaValBox.Location = new System.Drawing.Point(393, 73);
+            this.deltaValBox.Name = "deltaValBox";
+            this.deltaValBox.Size = new System.Drawing.Size(75, 20);
+            this.deltaValBox.TabIndex = 26;
+            this.deltaValBox.Text = "0";
+            this.deltaValBox.TextChanged += new System.EventHandler(this.deltaValBox_TextChanged);
+            // 
+            // label25
+            // 
+            this.label25.AutoSize = true;
+            this.label25.Location = new System.Drawing.Point(390, 55);
+            this.label25.Name = "label25";
+            this.label25.Size = new System.Drawing.Size(62, 13);
+            this.label25.TabIndex = 27;
+            this.label25.Text = "Delta Value";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(485, 322);
+            this.Controls.Add(this.label25);
+            this.Controls.Add(this.deltaValBox);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.stopBtn);
             this.Controls.Add(this.label24);
             this.Controls.Add(this.anglesSet);
@@ -626,6 +690,10 @@
         private System.Windows.Forms.Button anglesSet;
         private System.Windows.Forms.Label label24;
         private System.Windows.Forms.Button stopBtn;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.TextBox deltaValBox;
+        private System.Windows.Forms.Label label25;
     }
 }
 

@@ -1,4 +1,27 @@
-﻿using System;
+﻿/***************************************************************************
+This file is part of Quad Controller.
+Quad Controller is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Quad Controller is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Quad Controller.  If not, see <http://www.gnu.org/licenses/>.
+***************************************************************************/
+
+/* This file is basically the backend of the entire control software. It handles
+ * the serial communication with the Xbee on the computer side. It have multiple 
+ * threads to handle reading and writing to the serial port. There are a couple 
+ * of functions which are used to parse the commands to be sent to the quadrotor
+ * and a few functions to parse the data from the quadrotor.
+ */
+ 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,9 +55,8 @@ namespace QuadC_Sharp
         static void Main()
         {
 
+            // The following portion is used to write the output to a file at the location specified by twtl line
             Trace.Listeners.Clear();
-
-
             twtl = new TextWriterTraceListener("C:\\BTP\\Text_" + DateTime.Now.Month + "." + DateTime.Now.Day + "_" + DateTime.Now.Hour + "." + DateTime.Now.Minute + ".txt");
             //Path.Combine(Path.GetTempPath(), AppDomain.CurrentDomain.FriendlyName));
             twtl.Name = "TextLogger";
@@ -48,31 +70,48 @@ namespace QuadC_Sharp
             Trace.AutoFlush = true;
 
             // AllocConsole();
+            // Instantiates the serial port object
             sp = new SerialPort();
+
+            // Initialize thread uses the initPort function
             initialize = new Thread(initPort);
             bytes = new Byte[20];
 
+            // Two state flags are used _continue and state. They will be dealt with in the later bit of the code
             _continue = false;
             state = 0;
             packet = new Byte[20];
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             mForm1 = new Form1();
+
+            // Starts the initialize thread which opens the serial port and then starts the reader and writer threads
             initialize.Name = "Initialize";
             initialize.Start();
             Application.Run(mForm1);
             state = 3;
             _continue = false;
             state = 3;
+
+            // Join is used when the program is finished to close everything
             initialize.Join();
         }
+
+        // The Initialize threads calls upon this function to open the port. The port parameters can be
+        // adjusted here e.g. baud rate, stopbits, etc. 
         public static void initPort()
         {
+            /* State Description
+             * state == 1 - Open port
+             * state == 2 - Close port and close threads
+             * state == -3 - Normal read and write. This thread does nothing
+             */ 
             while (state != 3)
             {
-                if (_continue && state == 1)
+                if (_continue && state == 1 && !sp.IsOpen)
                 {
                     sp.BaudRate = 57600;
+                    // sp.BaudRate = 115200;
                     sp.StopBits = StopBits.One;
                     sp.DataBits = 8;
                     sp.Parity = Parity.None;
@@ -80,7 +119,7 @@ namespace QuadC_Sharp
                     sp.WriteTimeout = 500;
                     sp.PortName = mForm1.mQuad.comPort;
                     Console.WriteLine(sp.PortName);
-                    // TODO: Exception if COM port access is denied
+                    // To check if port CAN indeed be opened
                     try
                     {
                         sp.Open();
@@ -90,6 +129,7 @@ namespace QuadC_Sharp
                         Console.WriteLine("Could not open COM Port.");
                         _continue = false;
                     }
+                    // Starts the read and write threads
                     readThread = new Thread(Read);
                     readThread.Name = "ReadThread";
                     writeThread = new Thread(Write);
@@ -110,6 +150,9 @@ namespace QuadC_Sharp
                 // Do nothing
             }
         }
+
+        // This function is responsible for reading from the serial port. It looks for the start and end packet
+        // and once it gets both, it parses the data received via a call to printData
         public static void Read()
         {
             while (_continue)
@@ -133,7 +176,7 @@ namespace QuadC_Sharp
                                 {
                                     Thread.BeginCriticalRegion();
                                     printData(j);
-                                    Thread.EndCriticalRegion();
+                                    Thread.EndCriticalRegion(); 
                                 }
                                 j = -1;
                                 break;
@@ -153,6 +196,10 @@ namespace QuadC_Sharp
             }
         }
 
+        /* This function is responsible for writing the commands to the serial port as well as pinging the quadrotor.
+         * The packet is made in the makePacket function and depending on the type of packet specified in the 
+         * mForm1.mQuad.packetType flag, it writes to the serial port. The packet is stored in wBytes.
+         */
         public static void Write()
         {
             while (_continue)
@@ -185,7 +232,10 @@ namespace QuadC_Sharp
             }
         }
 
-        /* Option: 
+        /* This function prepares the command/ping packet. Since we are using a byte based address, if an item is more than
+         * one byte, it must be scaled appropriately or must be split into multiple bytes and parsed on the quad side. 
+         * See the code on both sides for better understanding.
+         * Option: 
          * 0 - Ping
          * 1 - Throttle
          * 2 - Pitch, Roll, Yaw PID
@@ -225,7 +275,7 @@ namespace QuadC_Sharp
                     output[start++] = (Byte)((int)(100 * mForm1.mQuad.yawKp) & 0xFF);
                     output[start++] = (Byte)((int)(100 * mForm1.mQuad.yawKi) & 0xFF);
                     output[start++] = (Byte)((int)(100 * mForm1.mQuad.yawKd) & 0xFF);
-                    /*** Using floats
+                    /*** The commented part is using floats directly
                     output = new Byte[4 * 9 + 5];
                     output[1] = 0x03;
                     // Pitch PID
@@ -313,6 +363,7 @@ namespace QuadC_Sharp
             return output;
         }
 
+        // This function gets the byte array from a uint 
         public static byte[] GetBytes(uint value)
         {
             return new byte[4] { 
@@ -322,12 +373,17 @@ namespace QuadC_Sharp
                     (byte)((value >> 24) & 0xFF) };
         }
 
+        // This function gets the byte array from a float. This program won't compile unless the UNSAFE flag is 
+        // set in the compiler options. If you are using this project file, it should already be set. If you don't 
+        // need this function, remove it and the unsafe flag in the compiler option.
         public static unsafe byte[] GetBytes(float value)
         {
             uint val = *((uint*)&value);
             return GetBytes(val);
         }
 
+        // This is an intermediate function used to check and fill in the missing parts of the packet (such as the
+        // xor checksum and the length). 
         static private Byte[] checkSize(Byte[] input)
         {
             Byte[] op;
@@ -362,6 +418,7 @@ namespace QuadC_Sharp
             return op;
         }
 
+        // This function parses the data from the quad and outputs to the file mentioned above
         public static void printData(Int16 msize)
         {
             int k, k1 = 0, temp = 0;
